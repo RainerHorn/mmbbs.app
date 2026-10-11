@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.TaskAlt
 import androidx.compose.material3.Card
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,16 +34,21 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import app.mmbbs.lehrerdashboard.data.FakeDashboardRepository
 import app.mmbbs.lehrerdashboard.domain.model.DashboardItem
 import app.mmbbs.lehrerdashboard.domain.model.ItemKind
@@ -54,14 +61,27 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun DashboardApp(viewModel: DashboardViewModel = viewModel()) {
-    val uiState by viewModel.uiState
-    DashboardScreen(uiState = uiState, onRefresh = viewModel::refresh)
+fun DashboardApp(viewModel: DashboardViewModel) {
+    val uiState by viewModel.uiState.collectAsState()
+    DashboardScreen(
+        uiState = uiState,
+        onRefresh = viewModel::refresh,
+        onSaveMemo = viewModel::saveMemo,
+        onDeleteMemo = viewModel::deleteMemo
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DashboardScreen(uiState: DashboardUiState, onRefresh: () -> Unit) {
+private fun DashboardScreen(
+    uiState: DashboardUiState,
+    onRefresh: () -> Unit,
+    onSaveMemo: (String?, String, String) -> Unit,
+    onDeleteMemo: (String) -> Unit
+) {
+    var editorItem by remember { mutableStateOf<DashboardItem?>(null) }
+    var editorOpen by remember { mutableStateOf(false) }
+    var detailItem by remember { mutableStateOf<DashboardItem?>(null) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -74,7 +94,7 @@ private fun DashboardScreen(uiState: DashboardUiState, onRefresh: () -> Unit) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { }) {
+            FloatingActionButton(onClick = { editorItem = null; editorOpen = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Memo hinzufügen")
             }
         }
@@ -83,8 +103,38 @@ private fun DashboardScreen(uiState: DashboardUiState, onRefresh: () -> Unit) {
             DashboardUiState.Loading -> LoadingState(Modifier.padding(innerPadding))
             is DashboardUiState.Error -> MessageState(uiState.message, Modifier.padding(innerPadding))
             is DashboardUiState.Empty -> MessageState("Für heute sind keine Einträge vorhanden.", Modifier.padding(innerPadding))
-            is DashboardUiState.Content -> DashboardContent(uiState, Modifier.padding(innerPadding))
+            is DashboardUiState.Content -> DashboardContent(
+                state = uiState,
+                modifier = Modifier.padding(innerPadding),
+                onItemClick = { item ->
+                    if (item.kind == ItemKind.MEMO) {
+                        editorItem = item
+                        editorOpen = true
+                    } else detailItem = item
+                }
+            )
         }
+    }
+    if (editorOpen) {
+        MemoEditorDialog(
+            item = editorItem,
+            onDismiss = { editorOpen = false },
+            onSave = { title, body ->
+                onSaveMemo(editorItem?.id, title, body)
+                editorOpen = false
+            },
+            onDelete = editorItem?.let { item ->
+                { onDeleteMemo(item.id); editorOpen = false }
+            }
+        )
+    }
+    detailItem?.let { item ->
+        AlertDialog(
+            onDismissRequest = { detailItem = null },
+            title = { Text(item.title) },
+            text = { Text(item.subtitle) },
+            confirmButton = { TextButton(onClick = { detailItem = null }) { Text("Schließen") } }
+        )
     }
 }
 
@@ -101,12 +151,17 @@ private fun MessageState(message: String, modifier: Modifier) {
 }
 
 @Composable
-private fun DashboardContent(state: DashboardUiState.Content, modifier: Modifier = Modifier) {
+private fun DashboardContent(
+    state: DashboardUiState.Content,
+    modifier: Modifier = Modifier,
+    onItemClick: (DashboardItem) -> Unit
+) {
     val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d. MMMM", Locale.GERMAN)
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.GERMAN)
     val date = state.date.format(dateFormatter).replaceFirstChar { it.uppercase() }
     val zoneId = ZoneId.systemDefault()
-    val status = "Zuletzt aktualisiert: ${timeFormatter.format(state.lastSync.atZone(zoneId))}"
+    val status = if (state.isRefreshing) "Wird aktualisiert …"
+        else "Zuletzt aktualisiert: ${timeFormatter.format(state.lastSync.atZone(zoneId))}"
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -116,11 +171,12 @@ private fun DashboardContent(state: DashboardUiState.Content, modifier: Modifier
         item {
             Text(date, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            state.message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Spacer(Modifier.height(8.dp))
             SummaryCard(state.items)
         }
         item { Text("Heute", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold) }
-        items(state.items, key = DashboardItem::id) { item -> DashboardCard(item, zoneId) }
+        items(state.items, key = DashboardItem::id) { item -> DashboardCard(item, zoneId) { onItemClick(item) } }
         item { Spacer(Modifier.height(72.dp)) }
     }
 }
@@ -149,8 +205,8 @@ private fun SummaryCard(items: List<DashboardItem>) {
 }
 
 @Composable
-private fun DashboardCard(item: DashboardItem, zoneId: ZoneId) {
-    Card(shape = RoundedCornerShape(16.dp)) {
+private fun DashboardCard(item: DashboardItem, zoneId: ZoneId, onClick: () -> Unit) {
+    Card(modifier = Modifier.clickable(onClick = onClick), shape = RoundedCornerShape(16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -165,6 +221,36 @@ private fun DashboardCard(item: DashboardItem, zoneId: ZoneId) {
             Text(item.displayTime(zoneId), style = MaterialTheme.typography.labelLarge)
         }
     }
+}
+
+@Composable
+private fun MemoEditorDialog(
+    item: DashboardItem?,
+    onDismiss: () -> Unit,
+    onSave: (String, String) -> Unit,
+    onDelete: (() -> Unit)?
+) {
+    var title by remember(item?.id) { mutableStateOf(item?.title.orEmpty()) }
+    var body by remember(item?.id) { mutableStateOf(item?.subtitle.orEmpty()) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (item == null) "Memo hinzufügen" else "Memo bearbeiten") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Titel") }, singleLine = true)
+                OutlinedTextField(value = body, onValueChange = { body = it }, label = { Text("Notiz") }, minLines = 3)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(title, body) }, enabled = title.isNotBlank()) { Text("Speichern") }
+        },
+        dismissButton = {
+            Row {
+                onDelete?.let { TextButton(onClick = it) { Text("Löschen") } }
+                TextButton(onClick = onDismiss) { Text("Abbrechen") }
+            }
+        }
+    )
 }
 
 private val ItemKind.label: String
@@ -194,6 +280,8 @@ private fun DashboardItem.displayTime(zoneId: ZoneId): String =
 private fun DashboardPreview() {
     val clock = Clock.fixed(Instant.parse("2026-10-11T07:42:00Z"), ZoneId.of("Europe/Berlin"))
     val date = LocalDate.now(clock)
-    val state = DashboardUiState.Content(date, FakeDashboardRepository(clock.zone).getItems(date), clock.instant())
-    LehrerDashboardTheme(dynamicColor = false) { DashboardScreen(state, onRefresh = {}) }
+    val state = DashboardUiState.Content(date, FakeDashboardRepository(clock.zone).sampleItems(date), clock.instant())
+    LehrerDashboardTheme(dynamicColor = false) {
+        DashboardScreen(state, onRefresh = {}, onSaveMemo = { _, _, _ -> }, onDeleteMemo = {})
+    }
 }

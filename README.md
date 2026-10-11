@@ -31,7 +31,7 @@ Das Debug-APK wird unter `app/build/outputs/apk/debug/app-debug.apk` erzeugt. Gi
 
 ## Architektur
 
-- `data`: Datenquellen und Repository-Verträge; aktuell liefert ein Fake Beispieldaten.
+- `data`: Datenquellen und Repository-Verträge; externe Daten kommen aktuell aus einem Fake, lokale Memos werden mit Room gespeichert.
 - `domain`: quellenunabhängige Dashboard-Modelle sowie Zusammenführung und Sortierung.
 - `ui`: Compose-Oberfläche, explizite UI-Zustände und `DashboardViewModel`.
 

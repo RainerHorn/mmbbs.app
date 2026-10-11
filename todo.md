@@ -20,11 +20,11 @@ Stand: 11. Oktober 2026
 
 ## P1 – Erste nutzbare Funktionen
 
-- [ ] Memo-Erstellung über den Floating Action Button implementieren, einschließlich Bearbeiten und Löschen.
-- [ ] Room-Datenbank für Memos und zwischengespeicherte Dashboard-Einträge integrieren.
-- [ ] Manuelle Aktualisierung als echte Aktion mit Ladeanzeige, Fehlerbehandlung und Zeitstempel umsetzen.
-- [ ] Detailansicht bzw. passende Aktion beim Antippen eines Dashboard-Eintrags ergänzen.
-- [ ] Leere Zustände, Offline-Hinweis und verständliche Fehlermeldungen gestalten.
+- [x] Memo-Erstellung über den Floating Action Button implementieren, einschließlich Bearbeiten und Löschen.
+- [ ] Room-Datenbank vervollständigen: Memos sind persistent; Cache für externe Dashboard-Einträge fehlt noch.
+- [x] Manuelle Aktualisierung als echte Aktion mit Ladeanzeige, Fehlerbehandlung und Zeitstempel umsetzen.
+- [x] Detailansicht bzw. passende Aktion beim Antippen eines Dashboard-Eintrags ergänzen.
+- [ ] Zustände vervollständigen: leerer Zustand und Fehlermeldungen sind vorhanden; Offline-Hinweis fehlt noch.
 
 ## P2 – Externe Datenquellen anbinden
 
