@@ -11,12 +11,12 @@ Stand: 11. Oktober 2026
 
 ## P1 – Fachliche Grundlage schaffen
 
-- [ ] Anforderungen und Datenumfang für WebUntis, Microsoft Graph, lokale Memos und Offline-Betrieb konkretisieren.
-- [ ] UI, Domänenlogik und Datenzugriff in klar getrennte Pakete bzw. Schichten aufteilen.
-- [ ] Dashboard-Modelle aus `DashboardApp.kt` herauslösen; stabile IDs, Zeitstempel, Status und Quelltyp ergänzen.
-- [ ] `DashboardViewModel` mit einem expliziten UI-Zustand einführen (Laden, Inhalt, leerer Zustand, Fehler, letzter Sync).
-- [ ] Statische `sampleItems` durch ein Repository ersetzen; Beispieldaten nur noch als Fake für Preview und Tests verwenden.
-- [ ] Ein einheitliches Sortier- und Zusammenführungsverhalten für Unterricht, Termine, Aufgaben, Nachrichten und Memos definieren.
+- [x] Anforderungen und Datenumfang für WebUntis, Microsoft Graph, lokale Memos und Offline-Betrieb konkretisieren.
+- [x] UI, Domänenlogik und Datenzugriff in klar getrennte Pakete bzw. Schichten aufteilen.
+- [x] Dashboard-Modelle aus `DashboardApp.kt` herauslösen; stabile IDs, Zeitstempel, Status und Quelltyp ergänzen.
+- [x] `DashboardViewModel` mit einem expliziten UI-Zustand einführen (Laden, Inhalt, leerer Zustand, Fehler, letzter Sync).
+- [x] Statische `sampleItems` durch ein Repository ersetzen; Beispieldaten nur noch als Fake für Preview und Tests verwenden.
+- [x] Ein einheitliches Sortier- und Zusammenführungsverhalten für Unterricht, Termine, Aufgaben, Nachrichten und Memos definieren.
 
 ## P1 – Erste nutzbare Funktionen
 
