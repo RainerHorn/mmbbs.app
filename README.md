@@ -31,8 +31,10 @@ Das Debug-APK wird unter `app/build/outputs/apk/debug/app-debug.apk` erzeugt. Gi
 
 ## Architektur
 
-- `data`: Datenquellen und Repository-Verträge; externe Daten kommen aktuell aus einem Fake, lokale Memos werden mit Room gespeichert.
+- `data`: Datenquellen und Repository-Verträge; externe Daten kommen aktuell aus einem Fake, lokale Memos und der letzte externe Tagesstand werden mit Room gespeichert.
 - `domain`: quellenunabhängige Dashboard-Modelle sowie Zusammenführung und Sortierung.
 - `ui`: Compose-Oberfläche, explizite UI-Zustände und `DashboardViewModel`.
 
 Die geplanten Datenquellen und Offline-Regeln sind in [`docs/requirements.md`](docs/requirements.md) beschrieben. Externe Quellen werden später hinter `DashboardRepository` ergänzt, ohne die UI an WebUntis oder Microsoft Graph zu koppeln.
+
+Schlägt eine externe Aktualisierung fehl, zeigt das Dashboard den letzten für diesen Tag gespeicherten Stand mit einem sichtbaren Offline-Hinweis. Lokale Memos bleiben unabhängig davon verfügbar.

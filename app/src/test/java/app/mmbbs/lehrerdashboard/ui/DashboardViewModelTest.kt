@@ -1,6 +1,7 @@
 package app.mmbbs.lehrerdashboard.ui
 
 import app.mmbbs.lehrerdashboard.data.DashboardRepository
+import app.mmbbs.lehrerdashboard.data.DashboardSnapshot
 import app.mmbbs.lehrerdashboard.domain.model.DashboardItem
 import app.mmbbs.lehrerdashboard.domain.model.ItemKind
 import app.mmbbs.lehrerdashboard.domain.model.ItemSource
@@ -57,6 +58,15 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `offline snapshot is exposed in content state`() = runTest {
+        Dispatchers.setMain(StandardTestDispatcher(testScheduler))
+        val item = DashboardItem("cached", "Gespeichert", "", ItemKind.TASK, ItemSource.MICROSOFT_GRAPH)
+        val viewModel = DashboardViewModel(TestRepository(listOf(item), offline = true), clock)
+        advanceUntilIdle()
+        assertTrue((viewModel.uiState.value as DashboardUiState.Content).isOffline)
+    }
+
+    @Test
     fun `save memo persists and refreshes`() = runTest {
         Dispatchers.setMain(StandardTestDispatcher(testScheduler))
         val repository = TestRepository()
@@ -72,15 +82,16 @@ class DashboardViewModelTest {
 
     private class TestRepository(
         private val items: List<DashboardItem> = emptyList(),
-        private val error: String? = null
+        private val error: String? = null,
+        private val offline: Boolean = false
     ) : DashboardRepository {
         var savedMemo: Triple<String?, String, String>? = null
         var loadCount = 0
 
-        override suspend fun getItems(date: LocalDate): List<DashboardItem> {
+        override suspend fun getDashboard(date: LocalDate): DashboardSnapshot {
             loadCount++
             error?.let { throw IllegalStateException(it) }
-            return items
+            return DashboardSnapshot(items, offline)
         }
 
         override suspend fun saveMemo(id: String?, title: String, body: String) {

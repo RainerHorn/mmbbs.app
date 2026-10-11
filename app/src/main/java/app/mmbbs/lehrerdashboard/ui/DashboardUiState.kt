@@ -10,9 +10,10 @@ sealed interface DashboardUiState {
         val date: LocalDate,
         val items: List<DashboardItem>,
         val lastSync: Instant,
+        val isOffline: Boolean = false,
         val isRefreshing: Boolean = false,
         val message: String? = null
     ) : DashboardUiState
-    data class Empty(val date: LocalDate, val lastSync: Instant) : DashboardUiState
+    data class Empty(val date: LocalDate, val lastSync: Instant, val isOffline: Boolean = false) : DashboardUiState
     data class Error(val message: String) : DashboardUiState
 }

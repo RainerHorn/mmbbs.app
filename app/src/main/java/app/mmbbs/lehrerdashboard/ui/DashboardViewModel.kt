@@ -26,9 +26,9 @@ class DashboardViewModel(
             _uiState.value = previous?.copy(isRefreshing = true) ?: DashboardUiState.Loading
             _uiState.value = try {
                 val date = LocalDate.now(clock)
-                val items = repository.getItems(date)
-                if (items.isEmpty()) DashboardUiState.Empty(date, clock.instant())
-                else DashboardUiState.Content(date, items, clock.instant())
+                val snapshot = repository.getDashboard(date)
+                if (snapshot.items.isEmpty()) DashboardUiState.Empty(date, clock.instant(), snapshot.isOffline)
+                else DashboardUiState.Content(date, snapshot.items, clock.instant(), snapshot.isOffline)
             } catch (exception: Exception) {
                 if (previous != null) previous.copy(isRefreshing = false, message = exception.message)
                 else DashboardUiState.Error(exception.message ?: "Daten konnten nicht geladen werden.")

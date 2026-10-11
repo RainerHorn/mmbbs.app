@@ -102,7 +102,11 @@ private fun DashboardScreen(
         when (uiState) {
             DashboardUiState.Loading -> LoadingState(Modifier.padding(innerPadding))
             is DashboardUiState.Error -> MessageState(uiState.message, Modifier.padding(innerPadding))
-            is DashboardUiState.Empty -> MessageState("Für heute sind keine Einträge vorhanden.", Modifier.padding(innerPadding))
+            is DashboardUiState.Empty -> MessageState(
+                if (uiState.isOffline) "Offline · Für heute sind keine gespeicherten Einträge vorhanden."
+                else "Für heute sind keine Einträge vorhanden.",
+                Modifier.padding(innerPadding)
+            )
             is DashboardUiState.Content -> DashboardContent(
                 state = uiState,
                 modifier = Modifier.padding(innerPadding),
@@ -171,6 +175,9 @@ private fun DashboardContent(
         item {
             Text(date, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (state.isOffline) {
+                Text("Offline · Gespeicherter Stand", color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.SemiBold)
+            }
             state.message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Spacer(Modifier.height(8.dp))
             SummaryCard(state.items)

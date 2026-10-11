@@ -8,7 +8,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class FakeDashboardRepository(private val zoneId: ZoneId = ZoneId.systemDefault()) : DashboardRepository {
-    override suspend fun getItems(date: LocalDate): List<DashboardItem> = sampleItems(date)
+    override suspend fun getDashboard(date: LocalDate) = DashboardSnapshot(sampleItems(date))
 
     fun sampleItems(date: LocalDate): List<DashboardItem> {
         fun at(hour: Int, minute: Int) = date.atTime(hour, minute).atZone(zoneId).toInstant()
